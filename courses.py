@@ -2,6 +2,7 @@ import os
 import selenium
 import sys
 import pymongo
+import re
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -11,6 +12,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import UnexpectedAlertPresentException
+
+def GetCourseCode(url):
+    code = url[73:85]
+    return code if re.match(r'SG_([A-Z]){5}_([A-Z])0([0-9])', code) else None
 
 try:
     print("Attempting to connect to MongoDB...")
@@ -34,8 +39,8 @@ WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR,
 
 gatheringURLs = True
 continueOk = True
-deptCount = 16
-courseCount = 30
+deptCount = 1
+courseCount = 0
 
 deptSelect = Select(driver.find_element_by_css_selector('[onchange="FilterStudentSets(swsform)"]'))
 deptSelect.select_by_index(deptCount) # Set the first department to get course count
@@ -71,12 +76,9 @@ while gatheringURLs and courseCount < totalCourses:
         continueOk = False
 
     if continueOk:
-        formatSelect = Select(driver.find_element_by_name('style'))
-        formatSelect.select_by_index(1) # List format
-
         driver.find_element_by_css_selector('[onclick="getTimetable(swsform, \'student+set\')"]').click() # Click button to view timetable
 
-        urls.append({'dept': currentDept, 'course': currentCourse, 'url': driver.current_url})
+        urls.append({'dept': currentDept, 'course': currentCourse, 'url': driver.current_url, 'courseCode': GetCourseCode(driver.current_url)})
         driver.execute_script("window.history.go(-1)") # Go back to timetable lookup
         courseCount+=1
 
@@ -85,6 +87,7 @@ while gatheringURLs and courseCount < totalCourses:
     if courseCount == totalCourses:
         courseCount = 0
         deptCount+=1
+
 
 if len(urls):
     print("All timetable URLs collected.")
