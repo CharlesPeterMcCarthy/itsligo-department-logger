@@ -30,17 +30,22 @@ def SetupDriver():
 
     return driver
 
-def GetCourseCode(url):
-    code = url[73:85]
-    return code if re.match(r'SG_([A-Z]){5}_([A-Z])0([0-9])', code) else None
+def GetCourseCode(driver):
+    try:
+        elem = driver.find_element_by_xpath("(/html/body/table/tbody/tr)[6]/td/table/tbody/tr")
+        courseCode = elem.text.strip()[15:27].upper()
+    except NoSuchElementException:
+        return None
 
-def SelectGeneralDropdowns(driver):
+    return courseCode if re.match(r'SG_([A-Z]){5}_([A-Z])0([0-9])', courseCode) else None
+
+def SelectGeneralDropdowns(driver, timeframe):
     try:
         formatSelect = Select(driver.find_element_by_name('style'))
         formatSelect.select_by_index(1) # List format
 
         weeksSelect = Select(driver.find_element_by_name('weeks'))
-        weeksSelect.select_by_index(2) # Semester1
+        weeksSelect.select_by_index(2 if timeframe == 'sem1' else 3) # Semester1 or Semester2
 
         daysSelect = Select(driver.find_element_by_name('days'))
         daysSelect.select_by_index(0) # Mon-Fri
@@ -144,11 +149,15 @@ while gatheringURLs and courseCount < totalCourses:
         deptCount += 1
         continue
 
-    SelectGeneralDropdowns(driver)
+    SelectGeneralDropdowns(driver, 'sem1')
+    sem1URL = GetTimetableURL(driver)
+    GoBack()
+    SelectGeneralDropdowns(driver, 'sem2')
+    sem2URL = GetTimetableURL(driver)
+    courseCode = GetCourseCode(driver)
 
     if continueOk:
-        url = GetTimetableURL(driver)
-        urls.append({'dept': currentDept, 'course': currentCourse, 'url': url, 'courseCode': GetCourseCode(url)})
+        urls.append({ 'dept': currentDept, 'course': currentCourse, 'courseCode': courseCode, 'url': { 'semester1': sem1URL, 'semester2': sem2URL } })
 
         GoBack()
         courseCount += 1
