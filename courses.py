@@ -1,8 +1,11 @@
+#!/usr/bin/python
+
 import os
 import selenium
 import sys
 import pymongo
 import re
+import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -38,6 +41,16 @@ def GetCourseCode(driver):
         return None
 
     return courseCode if re.match(r'SG_([A-Z]){5}_([A-Z])0([0-9])', courseCode) else None
+
+def GetCourseYear(driver):
+    try:
+        elem = driver.find_element_by_xpath("(/html/body/table/tbody/tr)[6]/td/table/tbody/tr")
+        text = elem.text.strip().upper()
+        parts = text.split('/')
+    except NoSuchElementException:
+        return None
+
+    return parts[2][1] if re.match(r'Y([1-9])', parts[2]) else None
 
 def SelectGeneralDropdowns(driver, timeframe):
     try:
@@ -155,9 +168,10 @@ while gatheringURLs and courseCount < totalCourses:
     SelectGeneralDropdowns(driver, 'sem2')
     sem2URL = GetTimetableURL(driver)
     courseCode = GetCourseCode(driver)
+    courseYear = GetCourseYear(driver)
 
     if continueOk:
-        urls.append({ 'dept': currentDept, 'course': currentCourse, 'courseCode': courseCode, 'url': { 'semester1': sem1URL, 'semester2': sem2URL } })
+        urls.append({ 'dept': currentDept, 'course': currentCourse, 'courseCode': courseCode, 'courseYear': courseYear, 'url': { 'semester1': sem1URL, 'semester2': sem2URL }, 'updatedAt': datetime.datetime.now() })
 
         GoBack()
         courseCount += 1
@@ -171,12 +185,6 @@ while gatheringURLs and courseCount < totalCourses:
         courseCount = 0
         deptCount += 1
 
-# urls = [{'dept': 'Department of Business', 'course': 'B Bus Business Administration L7 - Y1 (Ab Initio)', 'courseCode': 'SG_BADMN_B07', 'url': 'http://timetables.itsligo.ie:81/reporting/textspreadsheet;student+set;id;SG_BADMN_B07%2FF%2FY1%2F1%20%2FA%29%0D%0A?t=student+set+textspreadsheet&days=1-5&weeks=12&periods=3-20&template=student+set+textspreadsheet'},
-# {'dept': 'Department of Business', 'course': 'B Bus Business Administration L7 - Y2 (Ab Initio)', 'courseCode': 'SG_BADMN_B07', 'url': 'http://timetables.itsligo.ie:81/reporting/textspreadsheet;student+set;id;SG_BADMN_B07%2FF%2FY2%2F1%2F%28A%29%0D%0A?t=student+set+textspreadsheet&days=1-5&weeks=12&periods=3-20&template=student+set+textspreadsheet'},
-# {'dept': 'Department of Business', 'course': 'B Bus Business Administration L7 - Y3', 'courseCode': 'SG_BADMN_J07', 'url': 'http://timetables.itsligo.ie:81/reporting/textspreadsheet;student+set;id;SG_BADMN_J07%2FF%2FY3%2F1%2F%28A%29%0D%0A?t=student+set+textspreadsheet&days=1-5&weeks=12&periods=3-20&template=student+set+textspreadsheet'},
-# {'dept': 'Department of Business', 'course': 'B Bus Hons Business  (Hons) L8  - Y1 - Ab-Initio', 'courseCode': 'SG_BBUSI_H08', 'url': 'http://timetables.itsligo.ie:81/reporting/textspreadsheet;student+set;id;SG_BBUSI_H08%2FF%2FY1%2F1%2F%28A%29%0D%0A?t=student+set+textspreadsheet&days=1-5&weeks=12&periods=3-20&template=student+set+textspreadsheet'},
-# {'dept': 'Department of Business', 'course': 'B Bus Hons Business  L8  - Y3 - Ab-Initio', 'courseCode': None, 'url': 'http://timetables.itsligo.ie:81/reporting/textspreadsheet;student+set;id;SG_BBUSI_H08%2FF%2FY3%2F1%2F%28A%29%0D%0A?t=student+set+textspreadsheet&days=1-5&weeks=12&periods=3-20&template=student+set+textspreadsheet'}]
-# #
 # yearsAbrv = ['Y1', 'Y2', 'Y3', 'Y4']
 #
 # for url in urls:
