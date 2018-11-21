@@ -52,6 +52,9 @@ def GetCourseYear(driver):
 
     return parts[2][1] if re.match(r'Y([1-9])', parts[2]) else None
 
+def GetCourseLevel(driver, courseCode):
+    return courseCode[11:12] if re.match(r'SG_([A-Z]){5}_([A-Z])0([0-9])', courseCode) else None
+
 def SelectGeneralDropdowns(driver, timeframe):
     try:
         formatSelect = Select(driver.find_element_by_name('style'))
@@ -169,9 +172,10 @@ while gatheringURLs and courseCount < totalCourses:
     sem2URL = GetTimetableURL(driver)
     courseCode = GetCourseCode(driver)
     courseYear = GetCourseYear(driver)
+    courseLevel = GetCourseLevel(driver, courseCode)
 
     if continueOk:
-        urls.append({ 'dept': currentDept, 'course': currentCourse, 'courseCode': courseCode, 'courseYear': courseYear, 'url': { 'semester1': sem1URL, 'semester2': sem2URL }, 'updatedAt': datetime.datetime.now() })
+        urls.append({ 'dept': currentDept, 'courseDetails': { 'course': currentCourse, 'courseCode': courseCode, 'courseYear': courseYear, 'courseLevel': courseLevel }, 'url': { 'semester1': sem1URL, 'semester2': sem2URL }, 'updatedAt': datetime.datetime.now() })
 
         GoBack()
         courseCount += 1
