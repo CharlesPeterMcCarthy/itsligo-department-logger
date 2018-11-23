@@ -64,7 +64,7 @@ def SelectGeneralDropdowns(driver, timeframe):
         weeksSelect.select_by_index(2 if timeframe == 'sem1' else 3) # Semester1 or Semester2
 
         daysSelect = Select(driver.find_element_by_name('days'))
-        daysSelect.select_by_index(0) # Mon-Fri
+        daysSelect.select_by_index(1) # Mon-Sun
 
         periodsSelect = Select(driver.find_element_by_name('periods'))
         periodsSelect.select_by_index(0) # 9:00 - 18:00
@@ -144,8 +144,8 @@ driver = SetupDriver()
 
 gatheringURLs = True
 continueOk = True
-deptCount = 16
-courseCount = 35
+deptCount = 1
+courseCount = 0
 
 totalCourses = GetDeptCourseTotal(driver, deptCount)
 
@@ -170,12 +170,26 @@ while gatheringURLs and courseCount < totalCourses:
     GoBack()
     SelectGeneralDropdowns(driver, 'sem2')
     sem2URL = GetTimetableURL(driver)
+
     courseCode = GetCourseCode(driver)
     courseYear = GetCourseYear(driver)
     courseLevel = GetCourseLevel(driver, courseCode)
 
     if continueOk:
-        urls.append({ 'dept': currentDept, 'courseDetails': { 'course': currentCourse, 'courseCode': courseCode, 'courseYear': courseYear, 'courseLevel': courseLevel }, 'url': { 'semester1': sem1URL, 'semester2': sem2URL }, 'updatedAt': datetime.datetime.now() })
+        urls.append({
+            'dept': currentDept,
+            'courseDetails': {
+                'course': currentCourse,
+                'courseCode': courseCode,
+                'courseYear': courseYear,
+                'courseLevel': courseLevel
+            },
+            'url': {
+                'semester1': sem1URL,
+                'semester2': sem2URL
+            },
+            'updatedAt': datetime.datetime.now()
+        })
 
         GoBack()
         courseCount += 1
@@ -188,21 +202,6 @@ while gatheringURLs and courseCount < totalCourses:
     if courseCount == totalCourses:
         courseCount = 0
         deptCount += 1
-
-# yearsAbrv = ['Y1', 'Y2', 'Y3', 'Y4']
-#
-# for url in urls:
-#     courseName = url['course']
-#     parts = courseName.split(' ')
-#
-#     for i in range(len(parts)):
-#         part = parts[i].strip()
-#         if part in yearsAbrv:
-#             courseYear = part[1]
-#         elif part.lower() == 'year':
-#             courseYear = parts[i + 1].strip()
-#
-#     print(courseYear)
 
 
 LogUrls(urls)
