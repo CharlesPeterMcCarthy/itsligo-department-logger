@@ -3,10 +3,10 @@
 import os
 import selenium
 import sys
-import pymongo
 import re
 import datetime
 import json
+import boto3
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -74,14 +74,16 @@ def SelectGeneralDropdowns(driver, timeframe):
 
 def ConnectToDB():
     try:
-        print("Attempting to connect to MongoDB...")
-        mongo = pymongo.MongoClient("mongodb://localhost:27017/")
-        mongo.server_info()
-    except ConnectionFailure:
-        print("Failed to connect to MongoDB. Please run MongoDB first and try again.")
+        print("Attempting to connect to DynamoDB...")
+        dynamodb = boto3.resource('dynamodb', aws_access_key_id='{{ ACCESS_ID }}', aws_secret_access_key='{{ SECRET_KEY }}', region_name='eu-west-1')
+    except:
+        print("Failed to connect to DynamoDB.")
         exit()
-    print("Successfully connected to MongoDB.")
-    return mongo
+    print("Successfully connected to v.")
+    return dynamodb
+
+def GetDBTable(db):
+    return db.Table('Departments')
 
 def GetDeptCourseTotal(driver, deptCount):
     deptSelect = Select(driver.find_element_by_css_selector('[onchange="FilterStudentSets(swsform)"]'))
@@ -124,24 +126,25 @@ def GetTimetableURL(driver):
 def GoBack():
     driver.execute_script("window.history.go(-1)") # Go back to timetable lookup
 
-def LogUrls(urls):
-    if len(urls):
-        print("All timetable URLs collected.")
-        sys.stdout.write("\nSaving URLs to DB...")
+def LogDepts(depts, table):
+    if len(depts):
+        print("All Departments & Courses are collected.")
+        sys.stdout.write("\nSaving Departments...")
         sys.stdout.flush()
 
-        mydb = mongo["test_db"]
-        mycol = mydb["timetables"]
-        mycol.insert_many(urls)
+        with table.batch_writer() as batch:
+            for d in depts:
+                batch.put_item(Item=d)
 
-        sys.stdout.write("\rSaving URLs to DB... Done.\n")
+        sys.stdout.write("\rSaving Departments... Done.\n")
         sys.stdout.flush()
     else:
-        print("No timetable URLs collected.")
+        print("No Departments were collected.")
 
 depts = []
 deptCourses = []
-mongo = ConnectToDB()
+db = ConnectToDB()
+table = GetDBTable(db)
 driver = SetupDriver()
 
 gatheringURLs = True
@@ -153,6 +156,9 @@ totalCourses = GetDeptCourseTotal(driver, deptCount)
 
 while gatheringURLs and courseCount < totalCourses:
     continueOk = True
+
+    if deptCount == 17:
+        break
 
     currentDeptName = SelectDepartment(driver, deptCount)
     if not currentDeptName:
@@ -202,14 +208,15 @@ while gatheringURLs and courseCount < totalCourses:
 
     totalCourses = GetDeptCourseTotal(driver, deptCount)
 
-    if courseCount == totalCourses:
+    if courseCount == totalCourses or (courseCount == 10 and deptCount == 16):
         depts.append({
-            'department': currentDeptName,
-            'courses': deptCourses
+            'DepartmentName': currentDeptName,
+            'Courses': deptCourses
         })
         courseCount = 0
         deptCount += 1
+        deptCourses = []
 
-LogUrls(depts)
+LogDepts(depts, table)
 
 print("Finished.")
