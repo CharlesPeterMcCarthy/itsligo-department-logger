@@ -157,9 +157,6 @@ totalCourses = GetDeptCourseTotal(driver, deptCount)
 while gatheringURLs and courseCount < totalCourses:
     continueOk = True
 
-    if deptCount == 17:
-        break
-
     currentDeptName = SelectDepartment(driver, deptCount)
     if not currentDeptName:
         gatheringURLs = False
@@ -208,7 +205,7 @@ while gatheringURLs and courseCount < totalCourses:
 
     totalCourses = GetDeptCourseTotal(driver, deptCount)
 
-    if courseCount == totalCourses or (courseCount == 10 and deptCount == 16):
+    if courseCount == totalCourses:
         depts.append({
             'DepartmentName': currentDeptName,
             'Courses': deptCourses
