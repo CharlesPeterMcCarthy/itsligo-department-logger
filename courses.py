@@ -68,7 +68,7 @@ def SelectGeneralDropdowns(driver, timeframe):
         daysSelect.select_by_index(1) # Mon-Sun
 
         periodsSelect = Select(driver.find_element_by_name('periods'))
-        periodsSelect.select_by_index(0) # 9:00 - 18:00
+        periodsSelect.select_by_index(4) # 8:00 - 22:00
     except NoSuchElementException:
         print("An Error Occurred")
 
@@ -79,7 +79,7 @@ def ConnectToDB():
     except:
         print("Failed to connect to DynamoDB.")
         exit()
-    print("Successfully connected to v.")
+    print("Successfully connected to DynamoDB.")
     return dynamodb
 
 def GetDBTable(db):
@@ -187,8 +187,8 @@ while gatheringURLs and courseCount < totalCourses:
 
     if continueOk:
         deptCourses.append({
+            'name': currentCourse,
             'courseDetails': {
-                'course': currentCourse,
                 'courseCode': courseCode,
                 'courseYear': courseYear,
                 'courseLevel': courseLevel
