@@ -6,6 +6,7 @@ import sys
 import pymongo
 import re
 import datetime
+import json
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -138,7 +139,8 @@ def LogUrls(urls):
     else:
         print("No timetable URLs collected.")
 
-urls = []
+depts = []
+deptCourses = []
 mongo = ConnectToDB()
 driver = SetupDriver()
 
@@ -152,10 +154,12 @@ totalCourses = GetDeptCourseTotal(driver, deptCount)
 while gatheringURLs and courseCount < totalCourses:
     continueOk = True
 
-    currentDept = SelectDepartment(driver, deptCount)
-    if not currentDept:
+    currentDeptName = SelectDepartment(driver, deptCount)
+    if not currentDeptName:
         gatheringURLs = False
         break
+
+    print(currentDeptName)
 
     currentCourse = SelectCourse(driver, courseCount)
     if currentCourse:
@@ -172,12 +176,11 @@ while gatheringURLs and courseCount < totalCourses:
     sem2URL = GetTimetableURL(driver)
 
     courseCode = GetCourseCode(driver)
-    courseYear = GetCourseYear(driver)
-    courseLevel = GetCourseLevel(driver, courseCode)
+    courseYear = GetCourseYear(driver) if courseCode else None
+    courseLevel = GetCourseLevel(driver, courseCode) if courseCode else None
 
     if continueOk:
-        urls.append({
-            'dept': currentDept,
+        deptCourses.append({
             'courseDetails': {
                 'course': currentCourse,
                 'courseCode': courseCode,
@@ -188,7 +191,7 @@ while gatheringURLs and courseCount < totalCourses:
                 'semester1': sem1URL,
                 'semester2': sem2URL
             },
-            'updatedAt': datetime.datetime.now()
+            'updatedAt': datetime.datetime.now().isoformat()
         })
 
         GoBack()
@@ -200,10 +203,13 @@ while gatheringURLs and courseCount < totalCourses:
     totalCourses = GetDeptCourseTotal(driver, deptCount)
 
     if courseCount == totalCourses:
+        depts.append({
+            'department': currentDeptName,
+            'courses': deptCourses
+        })
         courseCount = 0
         deptCount += 1
 
-
-LogUrls(urls)
+LogUrls(depts)
 
 print("Finished.")
